@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>資安新聞爬蟲整合</title>
+</head>
+<body>
+  <h1>🛡️ 資安新聞與技術討論整合平台</h1>
+  <p>共抓取 <strong>{{ total }}</strong> 筆資料</p>
+  <ul>
+    {% for post in results %}
+      <li>
+        <strong>[{{ post.source }}]</strong>
+        <a href="{{ post.link }}" target="_blank">{{ post.title }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</body>
+</html>
