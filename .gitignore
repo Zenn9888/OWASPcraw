@@ -23,3 +23,7 @@ static/charts/*.json
 
 # Node（若前端有套工具）
 node_modules/
+
+# Large data
+Json/webcommentIT.comment.json
+Json/*.json
