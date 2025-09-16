@@ -39,3 +39,7 @@ Json/*.json
 # Large data
 Json/webcommentIT.comment.json
 Json/*.json
+
+# Secrets
+.env
+*.env
