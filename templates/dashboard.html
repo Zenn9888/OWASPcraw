@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-3 align-items-center mb-3">
+  <div class="col">
+    <h4 class="mb-0">Dashboard</h4>
+    <div class="text-muted small">最近一次更新的圖表 · 上次更新時間 · 排程狀態</div>
+  </div>
+  <div class="col-auto d-flex gap-2">
+    <form action="{{ url_for('refresh_now') }}" method="post">
+      <button class="btn btn-outline-secondary">⏱️ 立即更新</button>
+    </form>
+    <a href="{{ url_for('manage_analysis') }}" class="btn btn-primary">📑 資料分析</a>
+  </div>
+</div>
+
+<!-- 用 data-* 放模板值，避免 script 中出現 Jinja 標記 -->
+<div id="dashboard-data"
+     data-chart-id="{{ latest_chart.id if latest_chart else '' }}"
+     data-last-crawl="{{ last_crawl_at or '' }}">
+</div>
+
+<div class="row g-3">
+  <!-- 最近一次圖表 -->
+  <div class="col-12 col-xl-8">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">最近一次更新的圖表</h6>
+          {% if latest_chart %}
+          <span class="text-muted small">產生於：{{ latest_chart.created_at }}</span>
+          {% endif %}
+        </div>
+
+        {% if latest_chart %}
+          <div id="echarts-latest" style="width:100%;height:420px;"></div>
+        {% else %}
+          <div class="text-muted small">
+            尚未產生圖表。前往 <a href="{{ url_for('manage_analysis') }}">資料分析</a> 產生「OWASP Top 分佈」圖表。
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 更新狀態 -->
+  <div class="col-12 col-xl-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <h6 class="mb-3">更新狀態</h6>
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted">上次資料更新時間</span>
+          <strong id="last-update-time">{{ last_crawl_at if last_crawl_at else '尚未執行' }}</strong>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted">距離上次更新</span>
+          <strong id="time-since">—</strong>
+        </div>
+
+        <hr>
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted">排程狀態</span>
+          {% if schedule %}
+            <span class="badge bg-success">運行中</span>
+          {% else %}
+            <span class="badge bg-secondary">未啟動</span>
+          {% endif %}
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted">排程間隔</span>
+          <strong>{{ schedule.minutes if schedule else '-' }} 分鐘</strong>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="text-muted">下次執行</span>
+          <div class="d-flex align-items-center gap-2">
+            <strong id="next-run-time" class="font-monospace">{{ schedule.next if schedule else '-' }}</strong>
+            <span id="next-run-countdown" class="text-muted small"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if latest_chart %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+{% endif %}
+
+{% raw %}
+<script>
+(function(){
+  const dataEl = document.getElementById('dashboard-data');
+  const chartId = dataEl ? (dataEl.dataset.chartId || '') : '';
+  const lastStr = dataEl ? (dataEl.dataset.lastCrawl || '') : '';
+
+  function loadLatestChart(){
+    if (!chartId) return;
+    if (typeof echarts === 'undefined') return;
+    const dom = document.getElementById('echarts-latest');
+    if (!dom) return;
+
+    fetch(`/api/chart/${encodeURIComponent(chartId)}`)
+      .then(r => r.json())
+      .then(cfg => {
+        const ins = echarts.init(dom);
+        ins.setOption((cfg && cfg.option) || {}, true);
+        window.addEventListener('resize', () => ins.resize());
+      })
+      .catch(err => console.warn('load latest chart failed', err));
+  }
+
+  function startTimeSince(){
+    const el = document.getElementById('time-since');
+    if (!el) return;
+    if (!lastStr){ el.textContent = '—'; return; }
+    const base = new Date(lastStr.replace(' ', 'T'));
+    function fmt(ms){
+      const s = Math.floor(ms/1000);
+      const d = Math.floor(s/86400);
+      const h = Math.floor((s%86400)/3600);
+      const m = Math.floor((s%3600)/60);
+      const ss = s%60;
+      if (d>0) return `${d}天 ${h}小時 ${m}分`;
+      if (h>0) return `${h}小時 ${m}分 ${ss}秒`;
+      if (m>0) return `${m}分 ${ss}秒`;
+      return `${ss}秒`;
+    }
+    function tick(){
+      const diff = Date.now() - base.getTime();
+      if (diff < 0) { el.textContent = '—'; return; }
+      el.textContent = fmt(diff);
+    }
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  // ---- 倒數計時（與 actions.js 版相容） ----
+  (function bindScheduleCountdown(){
+    const timeEl = document.getElementById('next-run-time');
+    const cdEl   = document.getElementById('next-run-countdown');
+    if (!timeEl || !cdEl) return;
+
+    let timer = null;
+    const pad = n => String(n).padStart(2, "0");
+    const fmtLeft = (ms) => {
+      let s = Math.max(0, Math.floor(ms / 1000));
+      const h = Math.floor(s / 3600); s %= 3600;
+      const m = Math.floor(s / 60);   s %= 60;
+      return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+    };
+
+    async function loadAndStart(){
+      try{
+        const r = await fetch('/api/schedule_info', { credentials: 'same-origin' });
+        const j = await r.json();
+        if (!j.ok || !j.enabled || !j.next_epoch){
+          cdEl.textContent = '—';
+          if (j.next_iso) timeEl.textContent = j.next_iso;
+          if (timer) { clearInterval(timer); timer = null; }
+          return;
+        }
+        const nextEpoch = j.next_epoch;
+        if (j.next_iso) timeEl.textContent = j.next_iso;
+
+        function tick(){
+          const left = nextEpoch - Date.now();
+          if (left <= 0){
+            cdEl.textContent = '即將執行…';
+            clearInterval(timer);
+            timer = setTimeout(loadAndStart, 3000);
+            return;
+          }
+          cdEl.textContent = `倒數 ${fmtLeft(left)}`;
+          cdEl.title = `下次執行：${j.next_iso || ''}`;
+        }
+
+        if (timer) clearInterval(timer);
+        tick();
+        timer = setInterval(tick, 1000);
+      }catch(e){
+        console.warn(e);
+        cdEl.textContent = '（讀取失敗）';
+        if (timer) { clearInterval(timer); timer = null; }
+      }
+    }
+
+    loadAndStart();
+  })();
+
+  document.addEventListener('DOMContentLoaded', function(){
+    loadLatestChart();
+    startTimeSince();
+  });
+})();
+</script>
+{% endraw %}
+{% endblock %}

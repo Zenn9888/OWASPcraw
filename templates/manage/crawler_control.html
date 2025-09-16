@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% block title %}爬蟲控制{% endblock %}
+
+{% block content %}
+<div class="row g-3 align-items-center mb-3">
+  <div class="col">
+    <h4 class="mb-0">爬蟲控制</h4>
+    <div class="text-muted small">選擇來源（開/關）→ 即時更新或啟動定期更新</div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- HN -->
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body d-flex flex-column">
+        <div class="display-6 mb-2">🔵</div>
+        <h6 class="card-title">Hacker News</h6>
+        <p class="text-muted small">來源狀態：
+          <strong class="{{ 'text-success' if (sources and sources.get('hn')) else 'text-secondary' }}">
+            {{ '已開啟' if (sources and sources.get('hn')) else '已關閉' }}
+          </strong>
+        </p>
+        <form action="{{ url_for('toggle_source', src='hn') }}" method="post" class="mt-auto">
+          <button class="btn {{ 'btn-outline-danger' if (sources and sources.get('hn')) else 'btn-primary' }} w-100">
+            {{ '關閉' if (sources and sources.get('hn')) else '開啟' }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reddit -->
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body d-flex flex-column">
+        <div class="display-6 mb-2">🟢</div>
+        <h6 class="card-title">Reddit</h6>
+        <p class="text-muted small">來源狀態：
+          <strong class="{{ 'text-success' if (sources and sources.get('reddit')) else 'text-secondary' }}">
+            {{ '已開啟' if (sources and sources.get('reddit')) else '已關閉' }}
+          </strong>
+        </p>
+        <form action="{{ url_for('toggle_source', src='reddit') }}" method="post" class="mt-auto">
+          <button class="btn {{ 'btn-outline-danger' if (sources and sources.get('reddit')) else 'btn-success' }} w-100">
+            {{ '關閉' if (sources and sources.get('reddit')) else '開啟' }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- StackEx -->
+  <div class="col-12 col-md-6 col-xl-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body d-flex flex-column">
+        <div class="display-6 mb-2">🟣</div>
+        <h6 class="card-title">Security StackExchange</h6>
+        <p class="text-muted small">來源狀態：
+          <strong class="{{ 'text-success' if (sources and sources.get('stackex')) else 'text-secondary' }}">
+            {{ '已開啟' if (sources and sources.get('stackex')) else '已關閉' }}
+          </strong>
+        </p>
+        <form action="{{ url_for('toggle_source', src='stackex') }}" method="post" class="mt-auto">
+          <button class="btn {{ 'btn-outline-primary' if (sources and sources.get('stackex')) else 'btn-primary' }} w-100">
+            {{ '關閉' if (sources and sources.get('stackex')) else '開啟' }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 即時更新 -->
+  <div class="col-12 col-md-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body d-flex flex-column">
+        <div class="display-6 mb-2">⏱️</div>
+        <h6 class="card-title">即時更新</h6>
+        <p class="text-muted small">只會執行<strong>已開啟</strong>的來源，並於背景進行。</p>
+        <button id="btn-refresh" class="btn btn-outline-secondary w-100" type="button">執行一次</button>
+
+        <!-- 進度顯示區 -->
+        <div class="small text-muted mt-2" id="refresh-msg">尚未執行</div>
+        <div id="refresh_status_box" class="mt-2 p-2 rounded border small" style="background:#f8fafc;">
+          （等待中）
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 定期更新 -->
+  <div class="col-12 col-md-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="display-6 mb-2">📅</div>
+            <h6 class="card-title d-inline">定期更新</h6>
+          </div>
+          {% if schedule %}
+            <span class="badge bg-success">運行中</span>
+          {% else %}
+            <span class="badge bg-secondary">未啟動</span>
+          {% endif %}
+        </div>
+
+        <p class="text-muted small mb-2">
+          目前間隔：<strong>{{ schedule.minutes if schedule else '-' }} 分鐘</strong>；
+          下次執行：
+          <strong id="next-run-time" class="font-monospace">{{ schedule.next if schedule else '-' }}</strong>
+          <span id="next-run-countdown" class="ms-2 text-muted small"></span>
+        </p>
+
+        <form action="{{ url_for('start_schedule') }}" method="post" class="row g-2">
+          <div class="col-12">
+            <label class="form-label small">預設間隔</label>
+            <select name="preset" class="form-select">
+              <option value="30m">30 分鐘</option>
+              <option value="1h">1 小時</option>
+              <option value="2h">2 小時</option>
+              <option value="3h">3 小時</option>
+              <option value="5h">5 小時</option>
+              <option value="10h">10 小時</option>
+              <option value="custom">自訂</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small">自訂數值</label>
+            <input type="number" min="1" class="form-control" name="custom_value" placeholder="數字">
+          </div>
+          <div class="col-6">
+            <label class="form-label small">單位</label>
+            <select name="custom_unit" class="form-select">
+              <option value="minutes">分鐘</option>
+              <option value="hours">小時</option>
+            </select>
+          </div>
+          <div class="col-12 d-grid">
+            <button class="btn btn-primary">啟動定期更新</button>
+          </div>
+        </form>
+
+        <form action="{{ url_for('stop_schedule') }}" method="post" class="mt-2 d-grid">
+          <button class="btn btn-outline-danger">停止定期更新</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% raw %}
+<script>
+(function(){
+  // ---- 即時更新區塊：保留你原本的輪詢 ----
+  const btn = document.getElementById('btn-refresh');
+  const msg = document.getElementById('refresh-msg');
+  const box = document.getElementById('refresh_status_box');
+  let pollTimer = null;
+
+  function renderStatus(d){
+    const c = d.counts || {};
+    const phase = d.phase || 'idle';
+    const lines = (d.log_tail || []).join('\n');
+    box.innerHTML = `
+      <div>狀態：<b>${d.status}</b>（階段：${phase}）</div>
+      <div>來源：${(d.sources||[]).join(', ') || '-'}</div>
+      <div>貼文：total=${c.posts_total ?? '-'} / +${c.posts_added ?? 0}</div>
+      <div>留言：total=${c.comments_total ?? '-'} / +${c.comments_added ?? 0}</div>
+      <div>分類：processed=${c.labeled_processed ?? 0} / 寫入訓練 +${c.labeled_inserted ?? 0}</div>
+      <pre style="max-height:150px;overflow:auto;margin-top:6px;background:#fff;padding:8px;border-radius:8px;border:1px dashed #e5e7eb;">${lines}</pre>
+    `;
+  }
+
+  async function pollRefresh(){
+    try{
+      const r = await fetch('/api/refresh_status');
+      const d = await r.json();
+      renderStatus(d);
+      if (d.status === 'running'){
+        pollTimer = setTimeout(pollRefresh, 1500);
+      } else if (pollTimer){
+        clearTimeout(pollTimer);
+      }
+    }catch(e){
+      msg.textContent = '❌ 讀取進度失敗：' + e;
+      pollTimer = setTimeout(pollRefresh, 2000);
+    }
+  }
+
+  async function triggerRefresh(){
+    try{
+      btn.disabled = true;
+      btn.innerText = '執行中…';
+      msg.textContent = '已送出請求，背景執行中…（只會跑已開啟來源）';
+      box.innerHTML = '背景執行中…';
+      await fetch('/api/refresh_now', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({})
+      });
+      pollRefresh();
+    }catch(e){
+      msg.textContent = '❌ 發生錯誤：' + e;
+    }finally{
+      setTimeout(()=>{ btn.innerText = '執行一次'; btn.disabled = false; }, 1200);
+    }
+  }
+
+  if (btn) btn.addEventListener('click', triggerRefresh);
+  document.addEventListener('DOMContentLoaded', pollRefresh);
+
+  // ---- 定期更新：倒數計時（與 actions.js 版相容） ----
+  (function bindScheduleCountdown(){
+    const timeEl = document.getElementById('next-run-time');
+    const cdEl   = document.getElementById('next-run-countdown');
+    if (!timeEl || !cdEl) return;
+
+    let timer = null;
+    const pad = n => String(n).padStart(2, "0");
+    const fmtLeft = (ms) => {
+      let s = Math.max(0, Math.floor(ms / 1000));
+      const h = Math.floor(s / 3600); s %= 3600;
+      const m = Math.floor(s / 60);   s %= 60;
+      return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+    };
+
+    async function loadAndStart(){
+      try{
+        const r = await fetch('/api/schedule_info', { credentials: 'same-origin' });
+        const j = await r.json();
+        if (!j.ok || !j.enabled || !j.next_epoch){
+          cdEl.textContent = '—';
+          if (j.next_iso) timeEl.textContent = j.next_iso;
+          if (timer) { clearInterval(timer); timer = null; }
+          return;
+        }
+        const nextEpoch = j.next_epoch;
+        if (j.next_iso) timeEl.textContent = j.next_iso;
+
+        function tick(){
+          const left = nextEpoch - Date.now();
+          if (left <= 0){
+            cdEl.textContent = '即將執行…';
+            clearInterval(timer);
+            timer = setTimeout(loadAndStart, 3000);
+            return;
+          }
+          cdEl.textContent = `倒數 ${fmtLeft(left)}`;
+          cdEl.title = `下次執行：${j.next_iso || ''}`;
+        }
+
+        if (timer) clearInterval(timer);
+        tick();
+        timer = setInterval(tick, 1000);
+      }catch(e){
+        console.warn(e);
+        cdEl.textContent = '（讀取失敗）';
+        if (timer) { clearInterval(timer); timer = null; }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadAndStart);
+  })();
+})();
+</script>
+{% endraw %}
+{% endblock %}

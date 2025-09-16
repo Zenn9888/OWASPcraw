@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}使用者體驗{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-0">使用者體驗</h4>
+    <div class="text-muted small">主題切換、快速入口</div>
+  </div>
+  <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">← 回儀表板</a>
+</div>
+
+<div class="row g-3">
+  <!-- 深色模式 -->
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body d-flex flex-column">
+        <div class="display-6 mb-2">🌙</div>
+        <h6 class="card-title">深色模式</h6>
+        <p class="text-muted small flex-grow-1">切換深/淺主題外觀。</p>
+        <button id="btn-toggle-dark" class="btn btn-dark text-white w-100 mt-2">切換</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 系統操作 快速入口（直接連結，無需 JS 也能用） -->
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body d-flex flex-column">
+        <div class="display-6 mb-2">🧩</div>
+        <h6 class="card-title">系統操作</h6>
+        <p class="text-muted small flex-grow-1">清空/匯出/快取維運工具。</p>
+        <a href="{{ url_for('manage_system') }}" class="btn btn-outline-primary w-100 mt-auto">前往</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 類別統計 快速入口（直接連結） -->
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body d-flex flex-column">
+        <div class="display-6 mb-2">📥</div>
+        <h6 class="card-title">類別統計</h6>
+        <p class="text-muted small flex-grow-1">查看 OWASP 分佈與趨勢。</p>
+        <a href="{{ url_for('manage_analysis') }}" class="btn btn-outline-secondary w-100 mt-auto">查看</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-light border mt-4 small text-muted">
+  💡 深色模式狀態會存到 <code>session</code>（頁面重新整理後仍保留）。
+</div>
+{% endblock %}

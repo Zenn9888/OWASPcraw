@@ -1,19 +1,20 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="UTF-8">
-  <title>資安新聞爬蟲整合</title>
-</head>
-<body>
-  <h1>🛡️ 資安新聞與技術討論整合平台</h1>
-  <p>共抓取 <strong>{{ total }}</strong> 筆資料</p>
-  <ul>
-    {% for post in results %}
-      <li>
-        <strong>[{{ post.source }}]</strong>
-        <a href="{{ post.link }}" target="_blank">{{ post.title }}</a>
-      </li>
-    {% endfor %}
-  </ul>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}首頁{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-8 col-xl-6">
+    <div class="card shadow-sm border-0">
+      <div class="card-body text-center">
+        <h4 class="mb-1">⚡ Volt 控制台</h4>
+        <p class="text-muted mb-4">整合維運 / 分析 / 爬蟲 / 體驗</p>
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('dashboard') }}" class="btn btn-primary">進入功能管理</a>
+          <a href="{{ url_for('manage_analysis') }}" class="btn btn-outline-success">查看資料分析</a>
+          <a href="{{ url_for('manage_crawler') }}" class="btn btn-outline-secondary">前往爬蟲控制</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

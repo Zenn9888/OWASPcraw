@@ -1,0 +1,111 @@
+/* 側邊欄固定 */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 260px;
+  background-color: #1e293b;
+  overflow-y: auto;
+  z-index: 1020;
+}
+.sidebar a {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: #cbd5e1;
+  text-decoration: none;
+  border-radius: 0.375rem;
+  margin-bottom: 0.25rem;
+}
+.sidebar a.active,
+.sidebar a:hover {
+  background-color: #334155;
+  color: #fff;
+}
+
+/* 主內容 */
+.content {
+  margin-left: 260px; /* 與 .sidebar 寬度一致 */
+  min-height: 100vh;
+  background: #f6f7fb;
+  padding: 24px;
+}
+.page-container {
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+/* 卡片 */
+.card {
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.card .card-title {
+  font-weight: 600;
+}
+
+/* 按鈕 */
+.btn { border-radius: 0.5rem; }
+
+/* ===================== 深色模式（高對比） ===================== */
+html.dark body { background:#0b1220 !important; color:#e5e7eb !important; }
+html.dark a { color:#93c5fd; }
+html.dark a:hover { color:#bfdbfe; }
+
+html.dark .content { background:#0b1220 !important; }
+html.dark .sidebar { background-color:#0b1220 !important; }
+html.dark .sidebar a { color:#94a3b8 !important; }
+html.dark .sidebar a.active,
+html.dark .sidebar a:hover { background-color:#1e293b !important; color:#fff !important; }
+
+html.dark .card { background-color:#111827 !important; color:#e5e7eb !important; }
+html.dark .card .card-title,
+html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 { color:#f8fafc !important; }
+html.dark .card, html.dark .border, html.dark .list-group-item {
+  border-color: rgba(148,163,184,.24) !important;
+}
+
+/* muted / 次要文字（提高可讀性） */
+html.dark .text-muted,
+html.dark .text-body-secondary,
+html.dark .small,
+html.dark .card .text-muted { color:#94a3b8 !important; }
+
+/* 輸入框與 placeholder */
+html.dark .form-control,
+html.dark .form-select,
+html.dark .form-control:focus {
+  background-color:#0f172a !important;
+  color:#e5e7eb !important;
+  border-color: rgba(148,163,184,.35) !important;
+  box-shadow: none !important;
+}
+html.dark .form-control::placeholder { color:#64748b !important; }
+
+/* Outline 按鈕在深色下的對比 */
+html.dark .btn-outline-primary {
+  color:#93c5fd !important; border-color:#60a5fa !important;
+}
+html.dark .btn-outline-primary:hover {
+  background-color:#1d4ed8 !important; border-color:#1d4ed8 !important; color:#fff !important;
+}
+html.dark .btn-outline-secondary {
+  color:#cbd5e1 !important; border-color:#94a3b8 !important;
+}
+html.dark .btn-outline-secondary:hover {
+  background-color:#334155 !important; border-color:#334155 !important; color:#fff !important;
+}
+
+/* 淺色按鈕在深色背景的對比 */
+html.dark .btn-light {
+  background-color:#334155 !important; color:#e5e7eb !important; border-color:#334155 !important;
+}
+
+/* 警示與表格邊框 */
+html.dark .alert {
+  background-color:#0f172a !important; color:#e5e7eb !important;
+  border-color: rgba(148,163,184,.35) !important;
+}
+html.dark hr,
+html.dark .table > :not(caption) > * > * {
+  border-color: rgba(148,163,184,.24) !important;
+}

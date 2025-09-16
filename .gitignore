@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# OS 雜項
+.DS_Store
+Thumbs.db
+
+# 編輯器
+.vscode/
+.idea/
+
+# 環境/機密
+.env
+*.env
+
+# 產生檔（你可以選擇忽略）
+static/charts/*.json
+
+# Node（若前端有套工具）
+node_modules/

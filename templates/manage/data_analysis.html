@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}資料分析（ECharts）{% endblock %}
+
+{% block content %}
+<div class="row g-3 align-items-center mb-3">
+  <div class="col">
+    <h4 class="mb-0">資料分析</h4>
+    <div class="text-muted small">OWASP Top 分佈（ECharts 可放大 / 可刪除）</div>
+  </div>
+  <div class="col-auto d-flex gap-2">
+    <a href="{{ url_for('generate_charts') }}" class="btn btn-primary">➕ 產生 OWASP Top 圖表</a>
+  </div>
+</div>
+
+<form action="{{ url_for('search') }}" method="get" class="row g-2 align-items-center mb-3">
+  <div class="col">
+    <input class="form-control" type="text" name="q" placeholder="全文搜尋（title/content）">
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-outline-secondary">搜尋</button>
+  </div>
+</form>
+
+<div id="chart-list" class="row g-3"></div>
+
+<!-- Modal Viewer -->
+<div id="viewer" class="position-fixed top-0 start-0 w-100 h-100 d-none"
+     style="background: rgba(0,0,0,.6); z-index: 1055;">
+  <div class="position-absolute top-50 start-50 translate-middle bg-white rounded-3 shadow"
+       style="width: min(1200px, 96vw); height: min(80vh, 900px);">
+    <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+      <strong id="viewer-title">圖表</strong>
+      <div class="d-flex gap-2">
+        <button id="btn-delete-current" class="btn btn-sm btn-outline-danger">刪除此圖</button>
+        <button id="btn-close" class="btn btn-sm btn-outline-secondary">關閉</button>
+      </div>
+    </div>
+    <div id="viewer-canvas" style="width:100%; height: calc(100% - 44px);"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+{% raw %}
+<script>
+(function(){
+  const listEl = document.getElementById('chart-list');
+  const viewer = document.getElementById('viewer');
+  const vTitle = document.getElementById('viewer-title');
+  const vCanvas = document.getElementById('viewer-canvas');
+  const vClose = document.getElementById('btn-close');
+  const vDelete = document.getElementById('btn-delete-current');
+  let currentId = null;
+  let vInstance = null;
+
+  function openViewer(id, title){
+    currentId = id;
+    vTitle.textContent = title || id;
+    viewer.classList.remove('d-none');
+    if (vInstance){ vInstance.dispose(); vInstance = null; }
+    vInstance = echarts.init(vCanvas);
+    fetch(`/api/chart/${encodeURIComponent(id)}`)
+      .then(r => r.json())
+      .then(cfg => {
+        const opt = (cfg && cfg.option) || {};
+        // 若沒有 dataZoom/toolbox，就加上基本互動
+        opt.dataZoom = opt.dataZoom || [{"type":"inside"},{"type":"slider"}];
+        opt.toolbox = opt.toolbox || {"feature":{"saveAsImage":{},"dataView":{},"restore":{},"dataZoom":{}}};
+        vInstance.setOption(opt, true);
+        window.addEventListener('resize', () => vInstance && vInstance.resize());
+      })
+      .catch(e => console.warn(e));
+  }
+  function closeViewer(){
+    viewer.classList.add('d-none');
+    currentId = null;
+    if (vInstance){ vInstance.dispose(); vInstance = null; }
+  }
+
+  function cardTpl(item){
+    const id = item.id, title = item.title || id, created = item.created_at || '';
+    return `
+      <div class="col-12 col-md-6 col-xl-4">
+        <div class="card shadow-sm border-0 h-100">
+          <div class="card-body d-flex flex-column">
+            <h6 class="card-title">${title}</h6>
+            <div class="small text-muted mb-2">建立時間：${created}</div>
+            <div class="d-grid gap-2 mt-auto">
+              <button class="btn btn-outline-primary btn-view" data-id="${id}" data-title="${title}">放大檢視</button>
+              <button class="btn btn-outline-danger btn-del" data-id="${id}">刪除</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  async function loadList(){
+    listEl.innerHTML = '';
+    const r = await fetch('/api/charts');
+    const js = await r.json();
+    const items = (js && js.items) || [];
+    if (!items.length){
+      listEl.innerHTML = '<div class="text-muted small">目前沒有圖表，請按右上「產生 OWASP Top 圖表」。</div>';
+      return;
+    }
+    const frag = document.createElement('div');
+    frag.className = 'row g-3';
+    items.forEach(it => { frag.insertAdjacentHTML('beforeend', cardTpl(it)); });
+    listEl.appendChild(frag);
+
+    // bind buttons
+    listEl.querySelectorAll('.btn-view').forEach(btn => {
+      btn.addEventListener('click', e => openViewer(btn.dataset.id, btn.dataset.title));
+    });
+    listEl.querySelectorAll('.btn-del').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('確定要刪除這張圖？')) return;
+        const rr = await fetch('/api/charts/delete', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({id: btn.dataset.id})
+        });
+        const jj = await rr.json();
+        if (jj.ok){ loadList(); if (currentId===btn.dataset.id) closeViewer(); }
+        else alert('刪除失敗：' + (jj.error || ''));
+      });
+    });
+  }
+
+  vClose.addEventListener('click', closeViewer);
+  vDelete.addEventListener('click', async () => {
+    if (!currentId) return;
+    if (!confirm('確定要刪除目前這張圖？')) return;
+    const r = await fetch('/api/charts/delete', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({id: currentId})
+    });
+    const js = await r.json();
+    if (js.ok){ closeViewer(); loadList(); }
+    else alert('刪除失敗：' + (js.error || ''));
+  });
+
+  document.addEventListener('DOMContentLoaded', loadList);
+})();
+</script>
+{% endraw %}
+{% endblock %}

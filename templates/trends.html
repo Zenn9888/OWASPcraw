@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}趨勢{% endblock %}
+
+{% block content %}
+<div class="row g-3 align-items-center mb-3">
+  <div class="col">
+    <h4 class="mb-0">趨勢</h4>
+    <div class="text-muted small">最近 7~90 天各 OWASP 類別趨勢</div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <div id="trend-canvas" style="width:100%;height:460px;"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+{% raw %}
+<script>
+(function(){
+  const dom = document.getElementById('trend-canvas');
+  const ins = echarts.init(dom);
+  async function load(){
+    const r = await fetch('/analysis/trends', {headers:{'Accept':'application/json'}});
+    const js = await r.json();
+    const series = (js.datasets || []).map(ds => ({
+      name: ds.label, type: 'line', data: ds.data, smooth: true
+    }));
+    ins.setOption({
+      tooltip: {trigger:'axis'},
+      legend: {},
+      grid: {left: 40, right: 20, bottom: 40, top: 40, containLabel: true},
+      xAxis: {type:'category', data: js.labels || []},
+      yAxis: {type:'value'},
+      dataZoom: [{type:'inside'}, {type:'slider'}],
+      series
+    });
+  }
+  load();
+  window.addEventListener('resize', () => ins.resize());
+})();
+</script>
+{% endraw %}
+{% endblock %}

@@ -1,0 +1,10 @@
+[Unit]
+Description=Unified Security Crawler
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/security-crawler
+Environment=DOTENV_FILE=/opt/security-crawler/.env
+ExecStart=/usr/bin/python /opt/security-crawler/crawler_unified.py
+# Example for HOT:
+# ExecStart=/usr/bin/python /opt/security-crawler/crawler_unified.py --mode hot

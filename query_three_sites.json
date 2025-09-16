@@ -1,0 +1,14 @@
+﻿{
+  "$or": [
+    { "$or": [
+      { "source": "reddit" },
+      { "source": { "$regex": "stack", "$options": "i" } },
+      { "source": "hn" },
+      { "source": "news.ycombinator" },
+      { "source": "security.stackexchange" },
+      { "source": "stackoverflow" }
+    ] },
+    { "url":    { "$regex": "(?i)(reddit\\.com|stack(?:overflow|exchange)\\.com|news\\.ycombinator\\.com)" } },
+    { "domain": { "$regex": "(?i)(reddit\\.com|stack(?:overflow|exchange)\\.com|news\\.ycombinator\\.com)" } }
+  ]
+}
