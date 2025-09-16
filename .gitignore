@@ -43,3 +43,7 @@ Json/*.json
 # Secrets
 .env
 *.env
+
+# Secrets
+.env
+*.env
